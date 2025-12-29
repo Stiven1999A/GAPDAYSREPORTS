@@ -1,6 +1,7 @@
 """Script witht the functions to connect the data base"""
 import os
 import pyodbc
+from sqlalchemy import create_engine, text
 
 # Load environment variables
 try:
@@ -49,7 +50,7 @@ def connection_string_builder():
     )
     return connection_string
 
-def connect_to_db(connection_string=None):
+def pyodbc_connection(connection_string=None):
     """Establishes a connection to Azure SQL Managed Instance."""
     if connection_string is None:
         connection_string = connection_string_builder()
@@ -63,7 +64,56 @@ def connect_to_db(connection_string=None):
         print("Error details:", e)
         return None
 
+def engine_connection_string_builder():
+    """Builds the SQLAlchemy connection string for the database."""
+    server = os.getenv("DB_SERVER")
+    db_name = os.getenv("DB_NAME")
+    db_user = os.getenv("DB_USER")
+    db_password = os.getenv("DB_PASSWORD")
+    odbc_driver = os.getenv("ODBC_DRIVER", "ODBC Driver 18 for SQL Server")
+
+    missing = []
+    if not db_user:
+        missing.append("DB_USER")
+    if not db_password:
+        missing.append("DB_PASSWORD")
+    if missing:
+        raise SystemExit(f"Missing required env vars: {', '.join(missing)}")
+
+    # Build SQLAlchemy connection string
+    connection_string = (
+        f"mssql+pyodbc://{db_user}:{db_password}@{server}/{db_name}"
+        f"?driver={odbc_driver.replace(' ', '+')}"
+    )
+    return connection_string
+
+def create_sqlalchemy_engine(connection_string=None):
+    """Creates a SQLAlchemy engine for the database connection."""
+    if connection_string is None:
+        connection_string = engine_connection_string_builder()
+    try:
+        engine = create_engine(connection_string, fast_executemany=True)
+        return engine
+    except Exception as e:
+        print("❌ SQLAlchemy engine connection failed.")
+        print("Error details:", e)
+        return None
+
+def alchemy_connection(engine=None):
+    """Establishes a connection using SQLAlchemy engine."""
+    if engine is None:
+        connection_string = engine_connection_string_builder()
+        engine = create_sqlalchemy_engine(connection_string)
+    try:
+        conn = engine.connect()
+        #print("✅ SQLAlchemy connection successful!")
+        return conn
+    except Exception as e:
+        print("❌ SQLAlchemy connection failed.")
+        print("Error details:", e)
+        return None
+
 if __name__ == "__main__":
-    connection_string = connection_string_builder()
-    conn = connect_to_db(connection_string)
-    print(conn)
+    connection_string = engine_connection_string_builder()
+    engine = create_sqlalchemy_engine(connection_string)
+    conn = alchemy_connection(engine)
