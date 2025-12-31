@@ -7,3 +7,5 @@ streamlit>=1.10.0
 mssql-python
 pyodbc>=4.0.0
 sqlalchemy>=1.4.0
+plotly>=5.3.0
+kaleido>=0.2.1
