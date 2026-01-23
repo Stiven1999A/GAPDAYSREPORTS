@@ -11,7 +11,9 @@ def load_data(conn, PTO_date) -> pd.DataFrame:
     # Read from the reporting view containing daily employee hours summary
     query = f"""SELECT * FROM vw_VT_DailyEEHoursSummary
                 WHERE AT_Date BETWEEN '{(PTO_date - pd.Timedelta(days=26)).strftime('%Y-%m-%d')}' AND '{PTO_date.strftime('%Y-%m-%d')}'
-                AND Employee_ID IN ('A25969')"""
+                AND EmployeeTypeDescription = 'Full-time'
+                AND EmployeeStatusDescription = 'Active';
+                """
     result = conn.execute(text(query))
     df = pd.DataFrame(result.fetchall(), columns=result.keys())
     return df
@@ -26,13 +28,27 @@ def preprocess_data(df: pd.DataFrame) -> pd.DataFrame:
     df['Total Productive'] = df[['Productive Active Hours', 'Productive Passive Hours', 'PTO Hours', 'Holiday Hours']].sum(axis=1)
     return df
 
+def gap_days_identifier(df: pd.DataFrame) -> tuple[pd.DataFrame, np.ndarray]:
+    """Identifies users with gap days (users which at least on weekly daily productive average is less than 2 hours)."""
+    weekly_df = df.groupby(['EEID', 'Week']).agg({col: 'sum' for col in CHART_COLUMNS} | {'Total Productive': lambda x: x[x > 0].mean()}).reset_index()
+    weekly_df.rename(columns={'Total Productive': 'Daily Productive Average'}, inplace=True)
+    weekly_df = weekly_df.reset_index()
+    eeid_aux = weekly_df[weekly_df['Daily Productive Average'] < 2]['EEID'].unique()
+    gap_days_df = weekly_df[weekly_df['EEID'].isin(eeid_aux)]
+    gap_days_df['Total Hours'] = gap_days_df[CHART_COLUMNS].sum(axis=1)
+    gap_days_df['Weekly Productivity Accumulated Average'] = (
+        gap_days_df['Total Hours']
+        .expanding()
+        .mean()
+    )
+    return gap_days_df, eeid_aux
+
 def prepare_data_weekly_chart(df: pd.DataFrame) -> pd.DataFrame:
     """Prepares data for weekly charting."""
     
     weekly_df = df.groupby('Week').agg({col: 'sum' for col in CHART_COLUMNS} | {'Total Productive': lambda x: x[x > 0].mean()}).reset_index()
     weekly_df.rename(columns={'Total Productive': 'Daily Productive Average'}, inplace=True)
     weekly_df['Total Hours'] = weekly_df[CHART_COLUMNS].sum(axis=1)
-
     weekly_df['Weekly Productivity Accumulated Average'] = (
         weekly_df['Total Hours']
         .expanding()
