@@ -9,7 +9,7 @@ from utils import hours_to_hhmm
 from config import CHART_COLUMNS, PROD_COLORS
 from datetime import datetime
 
-def stacked_bar_chart(df: pd.DataFrame) -> go.Figure:
+def stacked_bar_chart(df: pd.DataFrame, eeid) -> go.Figure:
     """Generates a stacked bar chart for the given DataFrame."""
     fig = go.Figure(layout={
         
@@ -23,7 +23,7 @@ def stacked_bar_chart(df: pd.DataFrame) -> go.Figure:
             name=col,
             marker_color=PROD_COLORS[col],
             texttemplate=[hours_to_hhmm(y) for y in df[col]],
-            textposition="inside",
+            textposition="none",
             hovertemplate = f"<b>{col}</b><br>Week: %{{x}}<br>Hours: %{{texttemplate}}<extra></extra>",
         )
 
@@ -34,7 +34,7 @@ def stacked_bar_chart(df: pd.DataFrame) -> go.Figure:
             mode='lines+markers+text',
             name='Daily Productive Average per Week',
             line=dict(color="#CE089C", width=3, shape='spline'),
-            #text=[f"{hours_to_hhmm(y)}" for y in df['Daily Productive Average']],
+            text=[f"{hours_to_hhmm(y)}" for y in df['Daily Productive Average']],
             textposition="top center",
             yaxis="y",
             hoveron="points+fills"
@@ -59,7 +59,8 @@ def stacked_bar_chart(df: pd.DataFrame) -> go.Figure:
     fig.update_layout(
         width=1000,
         margin=dict(l=80, r=80),
-        title="Weekly Productive Hours",
+        title=f"""Weekly Productive Hours for {eeid} \n
+        Description""",
         xaxis_title="Week",
         yaxis_title="Hours",
         barmode="stack",
@@ -83,11 +84,11 @@ def stacked_bar_chart(df: pd.DataFrame) -> go.Figure:
     return fig
 
 df = load_data(alchemy_connection(), pd.to_datetime('2025-11-28'))
-print(df.shape)
+print(df.columns, df.head())
 df1, list_eeid = gap_days_identifier(preprocess_data(df))
-print(len(list_eeid))
+print(len(list_eeid), len(list_eeid) / 164636 * 100)
 
-#fig = stacked_bar_chart(prepare_data_weekly_chart(preprocess_data(load_data(alchemy_connection(), pd.to_datetime('2025-11-28')))))
+#fig = stacked_bar_chart(prepare_data_weekly_chart(preprocess_data(load_data(alchemy_connection(), pd.to_datetime('2025-11-28')))), eeid='L25884 Estefania Valencia Castano')
 #pio.show(fig)
 
 #output_path = Path("/Users/Estiben.Gonzalez/Downloads/Daily_AT_Report/GapDaysReports/app/data/output/weekly_productive_hours.png").resolve()

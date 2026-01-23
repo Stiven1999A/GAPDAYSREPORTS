@@ -9,11 +9,18 @@ from config import DICT_COL_NAMES, CHART_COLUMNS
 def load_data(conn, PTO_date) -> pd.DataFrame:
     """Loads data from the database into a DataFrame."""
     # Read from the reporting view containing daily employee hours summary
+    start_date = (PTO_date - pd.Timedelta(days=26)).strftime('%Y-%m-%d')
+    end_date = PTO_date.strftime('%Y-%m-%d')
     query = f"""SELECT * FROM vw_VT_DailyEEHoursSummary
-                WHERE AT_Date BETWEEN '{(PTO_date - pd.Timedelta(days=26)).strftime('%Y-%m-%d')}' AND '{PTO_date.strftime('%Y-%m-%d')}'
+                WHERE AT_Date BETWEEN '{start_date}' AND '{end_date}'
                 AND EmployeeTypeDescription = 'Full-time'
-                AND EmployeeStatusDescription = 'Active';
+                AND EmployeeStatusDescription = 'Active'
+                AND [Company Project Code Desc Only] NOT LIKE '1000%'
+                AND [Company Project Code Desc Only] NOT LIKE '%1050%'
+                AND [Company Project Code Desc Only] NOT LIKE '%3300%'
+                AND [Company Project Code Desc Only] NOT LIKE '%8600%';
                 """
+
     result = conn.execute(text(query))
     df = pd.DataFrame(result.fetchall(), columns=result.keys())
     return df
