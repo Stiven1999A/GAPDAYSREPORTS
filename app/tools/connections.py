@@ -1,7 +1,7 @@
 """Script witht the functions to connect the data base"""
 import os
 import pyodbc
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine
 
 # Load environment variables
 try:
@@ -106,7 +106,7 @@ def alchemy_connection(engine=None):
         engine = create_sqlalchemy_engine(connection_string)
     try:
         conn = engine.connect()
-        #print("✅ SQLAlchemy connection successful!")
+        print("✅ SQLAlchemy connection successful!")
         return conn
     except Exception as e:
         print("❌ SQLAlchemy connection failed.")
