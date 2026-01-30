@@ -75,7 +75,7 @@ def generate_png_report(description_text:tuple, images_folder_path:str, output_p
             label, value = info.split(":", 1)
             draw.text((padding, info_y_coor), label + ":", fill="black", font=info_font)
             label_width = info_font.getbbox(label + ":")[2]
-            draw.text((padding + label_width, info_y_coor), value, fill="#CE089C", font=info_font)
+            draw.text((padding + label_width, info_y_coor), value, fill="#990073", font=info_font)
         else:
             draw.text((padding, info_y_coor), info, fill="black", font=info_font)
         info_y_coor += info_font_size + 6

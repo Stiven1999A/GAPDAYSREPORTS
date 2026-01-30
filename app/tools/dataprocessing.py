@@ -47,7 +47,6 @@ def generate_gapdays_reports(df: pd.DataFrame, input_folder_path: str, output_fo
     print("Segmenting users with gap days...")
     df['Not_Prod_Weekend'] = df['Date'].dt.weekday.isin([5,6]) & (df['Total Hours'] == 0)
     df = df[~df['Not_Prod_Weekend']]
-
     weekly_df = df.groupby(['EEID', 'Week'], as_index=False).agg(
                                                                 {col: 'sum' for col in CHART_COLUMNS} |
                                                                 {'Total Hours': 'mean'}
@@ -55,13 +54,15 @@ def generate_gapdays_reports(df: pd.DataFrame, input_folder_path: str, output_fo
     weekly_df.rename(columns={'Total Hours': 'Daily Productive Average'}, inplace=True)
     weekly_df['Total Hours'] = weekly_df[CHART_COLUMNS].sum(axis=1)
     eeid_with_gaps = weekly_df[weekly_df['Daily Productive Average'] < 2]['EEID'].unique()
+    print(f"Total users analyzed: {df['EEID'].nunique()}")
     print(f"Found {len(eeid_with_gaps)} users with gap days.")
+    print(f"The proportion of users with gap days is {len(eeid_with_gaps) / df['EEID'].nunique()}")
     weekly_gap_days_df = weekly_df[weekly_df['EEID'].isin(eeid_with_gaps)].reset_index(drop=True)
-    
     # Text Parameters
     week_start = min(df['Week']).strftime('%b %d, %Y')
     week_end = (max(df['Week']) + pd.Timedelta(days=6)).strftime('%b %d, %Y')
     j = 0
+    print("Generating PNG report...")
     for eeid in eeid_with_gaps:
         user_df = df[df['EEID'] == eeid]
         user_name = f"{str(user_df['FName'].iloc[0]).title()} {str(user_df['LName'].iloc[0]).title()}" if pd.isna(user_df['AT_UserName'].iloc[0]) else str(user_df['AT_UserName'].iloc[0]).title()
@@ -86,8 +87,6 @@ def generate_gapdays_reports(df: pd.DataFrame, input_folder_path: str, output_fo
                                                                     .expanding()
                                                                     .mean()
                                                                     )
-
-            print(week_time_df)
             daily_bar_chart(week_time_df, input_folder_path,week, f"daily_productive_hours_week{i + 1}")
 
         def create_text_parameters():
@@ -108,8 +107,13 @@ def generate_gapdays_reports(df: pd.DataFrame, input_folder_path: str, output_fo
         
         text_parameters = create_text_parameters()
         input_folder = Path(input_folder_path)
-        output_folder = Path(output_folder_path)
-        generate_png_report(text_parameters, input_folder, output_folder, f"Gap Days Report - {eeid} {user_name}")
-        if j == 5:
+        output_folder_reports = Path(f"{output_folder_path}png_reports/")
+        generate_png_report(text_parameters, input_folder, output_folder_reports, f"Gap Days Report - {eeid} {user_name}")
+        if j == 1:
             break
         j += 1
+    # Save CSV dataset
+    print('Saving CSV dataset...')
+    df_to_save = df[['Date', 'Week', 'EEID', 'AT_UserName', 'FName', 'LName', 'EmployeeTypeDescription', 'Title', 'Company Project Code Desc Only', 'Location']].copy()
+    df_to_save['Gap_Status'] = df_to_save['EEID'].apply(lambda x: 'Gap' if x in eeid_with_gaps else 'No Gap')
+    df_to_save.to_csv(f"{output_folder_path}csv_datasets/GapDaysDataset_{week_start}_{week_end}.csv", index=False)
