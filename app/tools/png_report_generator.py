@@ -4,7 +4,7 @@ Docstring for app.tools.report_generator
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
  
-def generate_png_report(description_text:tuple, images_folder_path:str, output_path:str, output_name:str):
+def generate_png_report(description_text:tuple, images_folder_path:str, output_path:str, output_name:str, num_weeks:int):
     # ---- CONFIG ----
     images_folder = Path(images_folder_path)
     canvas_width = 2600
@@ -92,7 +92,7 @@ def generate_png_report(description_text:tuple, images_folder_path:str, output_p
         des_y_coor += 10  # Extra space between paragraphs
 
     # ---- BOTTOM IMAGE (LEFT) ----
-    bottom_image = images[4]
+    bottom_image = images[num_weeks]
     available_height = canvas_height - des_y_coor - padding
     img_ratio = text_max_width / bottom_image.width
     img_height = min(int(bottom_image.height * img_ratio), available_height)
@@ -107,10 +107,10 @@ def generate_png_report(description_text:tuple, images_folder_path:str, output_p
     right_x = left_width + padding
     img_width = right_width - 2 * padding
     available_height = canvas_height - 2 * padding
-    img_height = (available_height - 3 * padding) // 4
+    img_height = (available_height - 3 * padding) // num_weeks
 
     y = padding
-    for img in images[:4]:
+    for img in images[:num_weeks]:
         ratio = img_width / img.width
         new_height = min(int(img.height * ratio), img_height)
         resized = img.resize((img_width, new_height))

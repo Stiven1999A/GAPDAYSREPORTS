@@ -56,7 +56,6 @@ def pyodbc_connection(connection_string=None):
         connection_string = connection_string_builder()
     try:
         conn = pyodbc.connect(connection_string)
-        print("✅ Connection successful!")
         return conn
 
     except pyodbc.Error as e:
@@ -106,7 +105,6 @@ def alchemy_connection(engine=None):
         engine = create_sqlalchemy_engine(connection_string)
     try:
         conn = engine.connect()
-        print("✅ SQLAlchemy connection successful!")
         return conn
     except Exception as e:
         print("❌ SQLAlchemy connection failed.")
